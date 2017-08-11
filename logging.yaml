@@ -1,0 +1,61 @@
+---
+version: 1
+disable_existing_loggers: True
+formatters:
+    simple:
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+
+    debug_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: simple
+        filename: ..//mcrp-logs//mcrp-debug.log
+        maxBytes: 1048576 # 1MB
+        backupCount: 300
+        encoding: utf8
+        
+    info_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: simple
+        filename: ..//mcrp-logs//mcrp-info.log
+        maxBytes: 1048576 # 1MB
+        backupCount: 300
+        encoding: utf8
+
+    error_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: ERROR
+        formatter: simple
+        filename: ..//mcrp-logs//mcrp-error.log
+        maxBytes: 1048576 # 1MB
+        backupCount: 300
+        encoding: utf8
+        
+    queue_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: simple
+        filename: ..//mcrp-logs/mcrp-debug.log
+        maxBytes: 1048576 # 1MB
+        backupCount: 300
+        encoding: utf8
+
+loggers:
+    mcrpque:
+        level: DEBUG
+        handlers: [queue_file_handler]
+        propagate: no
+
+root:
+    level: DEBUG
+    handlers: [debug_file_handler]
+...
+
