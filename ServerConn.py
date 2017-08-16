@@ -36,9 +36,9 @@ def send_message(address, event, data, backend):
 def isValidaAddress(address):
     if len(address) < 5 or len(address) > 10:
         return False
-    if address.find("+") or address.find("000"):
-        return False
-    rq.sadd('user'+getCurrentTimeStampKey(), address)
+    #if address.find("+") or address.find("000"):
+        #return False
+    rq.sadd('user'+util.getCurrentTimeStampKey(), address)
     return True
     
 def ProcessClientRequest(frames, workers, backend):
@@ -52,7 +52,7 @@ def ProcessClientRequest(frames, workers, backend):
     if isValidaAddress(address) ==  False:
         send_message(address, b'6', b'1', backend)
         return
-    rq.set('last_client_ping',getCurrentTimeStamp())
+    rq.set('last_client_ping',util.getCurrentTimeStamp())
     if frames[1]==b'1':
         send_message(address, b'2', None, backend)
     elif frames[1]==b'3':
@@ -85,4 +85,4 @@ def StartServer():
             ProcessClientRequest(frames, workers, backend)
         if time.time() >= ping_at:
             ping_at = time.time() + PING_INTERVAL
-            rq.set('last_zmq_ping',getCurrentTimeStamp())
+            rq.set('last_zmq_ping',util.getCurrentTimeStamp())
