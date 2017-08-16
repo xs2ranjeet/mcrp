@@ -2,12 +2,14 @@ import zmq
 import logging
 import redis
 import time
+import util
 from settings import rq
 from RedisListener import Listener
 from collections import OrderedDict
 
 HEARTBEAT_INTERVAL = 1.0   # Seconds
 HEARTBEAT_LIVENESS = 3     # 3..5 is reasonable
+PING_INTERVAL = 30.0   # Seconds
 class Worker(object):
     def __init__(self, address):
         self.address = address
@@ -25,22 +27,39 @@ class WorkerQueue(object):
         print(address)
         print(worker)
         return address
+def send_message(address, event, data, backend):
+    if data == None:
+        msg = [address, event]
+    else:
+        msg = [address, event, data]
+    backend.send_multipart(msg)
+def isValidaAddress(address):
+    if len(address) < 5 or len(address) > 10:
+        return False
+    if address.find("+") or address.find("000"):
+        return False
+    rq.sadd('user'+getCurrentTimeStampKey(), address)
+    return True
+    
 def ProcessClientRequest(frames, workers, backend):
     if not frames:
         return
     logging.info(frames)
     address = frames[0]
     workers.ready(Worker(address))
-    print(frames[1])
+    #print(frames[1])
     #print(address)
+    if isValidaAddress(address) ==  False:
+        send_message(address, b'6', b'1', backend)
+        return
+    rq.set('last_client_ping',getCurrentTimeStamp())
     if frames[1]==b'1':
-        msg = [address,b'2']
-        backend.send_multipart(msg)
+        send_message(address, b'2', None, backend)
     elif frames[1]==b'3':
-        msg = [address,b'4']
-        backend.send_multipart(msg)
+        send_message(address, b'4', None, backend)
     elif frames[1]==b'54':
-        r.hset('REG_DATA', address, frames[2].decode())
+        rq.hset('REG_DATA', address, frames[2].decode())
+        send_message(address, b'154', None, backend)
     
 def StartServer():
     logging.info("Server Start")
@@ -54,7 +73,7 @@ def StartServer():
     
     poll_workers = zmq.Poller()
     poll_workers.register(backend, zmq.POLLIN)
-    
+    ping_at = time.time() + PING_INTERVAL
     while True:
         poller = poll_workers
         socks = dict(poller.poll(HEARTBEAT_INTERVAL * 1000))
@@ -64,3 +83,6 @@ def StartServer():
             # Use worker address for LRU routing
             frames = backend.recv_multipart()
             ProcessClientRequest(frames, workers, backend)
+        if time.time() >= ping_at:
+            ping_at = time.time() + PING_INTERVAL
+            rq.set('last_zmq_ping',getCurrentTimeStamp())
