@@ -20,6 +20,21 @@ def setup_logging(
     if os.path.exists(path):        
         with open(path, 'rt') as f:
             config = yaml.safe_load(f.read())
+        x = config['root']['handlers']
+        for row, i in enumerate(x):
+            #print("row: {}, data: {}".format(row, i))
+            filename = config['handlers'][x[row]]['filename']
+            fullpath = os.path.abspath(filename)
+            #print(fullpath)
+            fullpath = fullpath.rsplit(sep='\\', maxsplit=1)
+            #print(fullpath)
+            if os.path.exists(fullpath[0]):
+                print("path exist")
+            else:
+                print('log folder path does not exist, creating folder')
+                os.mkdir(fullpath[0])
+                
+        #print(config['handlers'][x[0]]['filename'])
         logging.config.dictConfig(config)
         logging.info('creating defined logging configuration!')
     else:
